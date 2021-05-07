@@ -10,31 +10,37 @@ const prefix = "!";
 
 client.on("message", function(message) {
   if (message.author.bot) return;
-  if (!message.content.startsWith(prefix)) return;
 
-  const commandBody = message.content.slice(prefix.length);
-  const args = commandBody.split(' ');
-  const command = args.shift().toLowerCase();
+  if (message.content.startsWith(prefix)) {
 
-  if (command === "ping") {
-    const timeTaken = Date.now() - message.createdTimestamp;
-    message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
-  }
-  else if (command === "link") {
-    const u = args.shift();
-    if (isValidHttpUrl(u)) {
-      let stream = fs.createWriteStream("links.jsonl", {flags:'a'});
-      let date = new Date().toISOString();
-      console.log(date + " Saving this link from " + message.author.tag + ": " + u);
-      let entry = { url: u, user: message.author.tag, date: date };
+    const commandBody = message.content.slice(prefix.length);
+    const args = commandBody.split(' ');
+    const command = args.shift().toLowerCase();
 
-      jsonfile.writeFile(outfile, entry, { flag: 'a' }, function (err) {
-        if (err) console.error(err)
-      });
+    if (command === "ping") {
+      const timeTaken = Date.now() - message.createdTimestamp;
+      message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
+    }
+  } else {
 
-      message.reply(`Saved.`);
-    } else {
-      message.reply(`Sorry, that doesn't look like a valid URL.`);
+    const words = message.content.split(' ');
+
+    let count = 0;
+    for (const s of words) {
+      if (isValidHttpUrl(s)) {
+        let stream = fs.createWriteStream("links.jsonl", {flags:'a'});
+        let date = new Date().toISOString();
+        console.log(date + " Saving this link from " + message.author.tag + ": " + s);
+        let entry = { url: s, date: date };
+  
+        jsonfile.writeFile(outfile, entry, { flag: 'a' }, function (err) {
+          if (err) console.error(err)
+        });
+        count++; 
+      } 
+    }
+    if (count > 0) {
+      message.reply(`Saved: ` + count);
     }
   }
 });
