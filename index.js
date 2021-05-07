@@ -22,12 +22,11 @@ client.on("message", function(message) {
   }
   else if (command === "link") {
     const u = args.shift();
-    const text = args.join(' ');
     if (isValidHttpUrl(u)) {
       let stream = fs.createWriteStream("links.jsonl", {flags:'a'});
       let date = new Date().toISOString();
       console.log(date + " Saving this link from " + message.author.tag + ": " + u);
-      let entry = { url: u, user: message.author.tag, date: date, text: text };
+      let entry = { url: u, user: message.author.tag, date: date };
 
       jsonfile.writeFile(outfile, entry, { flag: 'a' }, function (err) {
         if (err) console.error(err)
