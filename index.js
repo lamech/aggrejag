@@ -40,7 +40,11 @@ client.on("message", function(message) {
       } 
     }
     if (count > 0) {
-      message.reply(`Saved: ` + count);
+      let links = ' link.';
+      if (count > 1) {
+        links = ' links.';
+      }
+      message.reply('Saved ' + count + links);
     }
   }
 });
