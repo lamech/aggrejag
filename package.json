@@ -1,0 +1,16 @@
+{
+  "name": "aggrejag",
+  "version": "1.0.0",
+  "description": "Link aggregation for the Vault.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dan Friedman",
+  "license": "ISC",
+  "dependencies": {
+    "discord": "^0.8.2",
+    "discord.js": "^12.5.3",
+    "jsonfile": "^6.1.0"
+  }
+}
