@@ -1,16 +1,21 @@
 const fs = require('fs');
 const jsonfile = require('jsonfile')
-const sqlite3 = require('sqlite3').verbose();
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
 let auth = require('./auth.json');
 
+const { sequelize, Links } = require('./dbObjects');
+
 const prefix = "!";
 
-client.on("message", function(message) {
+client.on("message", async message => {
+
+  // TODO: add config mechanism for channels to explicitly watch, ignoring others?
+
   if (message.author.bot) return;
 
+  // Commands section. To generalize.
   if (message.content.startsWith(prefix)) {
 
     const commandBody = message.content.slice(prefix.length);
@@ -25,23 +30,39 @@ client.on("message", function(message) {
     }
   } else {
 
-    const outfile = 'links.jsonl'; 
+    // Someone said something! Let's see if there are links to grab.
+
     const words = message.content.split(' ');
 
     let count = 0;
     for (const s of words) {
       if (isValidHttpUrl(s)) {
-        let stream = fs.createWriteStream("links.jsonl", {flags:'a'});
+
+      // There's a link in the message! Let's try to save it.
+
         let date = new Date().toISOString();
-        console.log(date + " Saving this link from " + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ": " + s);
-        let entry = { url: s, date: date, server: message.guild.name, channel: message.channel.name };
-  
-        jsonfile.writeFile(outfile, entry, { flag: 'a' }, function (err) {
-          if (err) console.error(err)
-        });
-        count++; 
-      } 
-    }
+
+        try {
+
+        	const link = await Links.create({
+        		url: s,
+            server: message.guild.name,
+            channel: message.channel.name
+        	});
+
+          console.log(date + " Saved this link from " + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ": " + s);
+          count++;
+
+        } catch (e) {
+
+          if (e.name === 'SequelizeUniqueConstraintError') {
+            console.log(date + ' ' + e + ': Not saving this duplicate link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s);
+	        } else {
+          console.error(date + ' Got exception ' + e + ' while trying to save this link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s);
+          }
+        }
+      }
+    } 
     if (count > 0) {
       let links = ' link.';
       if (count > 1) {
@@ -53,6 +74,7 @@ client.on("message", function(message) {
 });
 
 client.once('ready', () => {
+  sequelize.sync();
 	console.log('Aggrejag ready.');
 });
 
@@ -69,3 +91,4 @@ function isValidHttpUrl(string) {
 
   return url.protocol === "http:" || url.protocol === "https:";
 }
+

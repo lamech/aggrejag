@@ -7,7 +7,7 @@ const sequelize = new Sequelize('database', 'user', 'password', {
   storage: 'database.sqlite',
 });
 
-const Links = require('./models/Links')(sequelize, Sequelize.DataTypes);
+const Links = require('./model/Links')(sequelize, Sequelize.DataTypes);
 
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 
