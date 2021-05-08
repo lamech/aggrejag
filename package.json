@@ -2,7 +2,7 @@
   "name": "aggrejag",
   "version": "1.0.0",
   "description": "Link aggregation for the Vault.",
-  "main": "index.js",
+  "main": "aggrejag.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,6 +11,9 @@
   "dependencies": {
     "discord": "^0.8.2",
     "discord.js": "^12.5.3",
-    "jsonfile": "^6.1.0"
+    "jsonfile": "^6.1.0",
+    "sequelize": "^6.6.2",
+    "sqlite": "^4.0.21",
+    "sqlite3": "^5.0.2"
   }
 }
