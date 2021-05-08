@@ -34,8 +34,8 @@ client.on("message", async message => {
       let links = await Links.findAll({
         limit: 50,
         where: {
-          server: message.guild.name,
-          channel: message.channel.name
+          guild_id: message.guild.id,
+          channel_id: message.channel.id
         }
       });
 
@@ -43,8 +43,8 @@ client.on("message", async message => {
         limit: 50,
         order: [['createdAt', 'DESC']],
         where: {
-          server: message.guild.name,
-          channel: message.channel.name,
+          guild_id: message.guild.id,
+          channel_id: message.channel.id,
           url: { 
             [Op.or]: {
               [Op.startsWith]: 'https://youtube.com/', 
@@ -97,25 +97,41 @@ client.on("message", async message => {
       // There's a link in the message! Let's try to save it.
 
         let date = new Date().toISOString();
-        let title = await fetchTitle(s);
    
         try {
-          const link = Links.create({
-          	url: s,
-            server: message.guild.name,
-            channel: message.channel.name,
-            description: title
+ 
+          // Do we already have this link for this server/channel?
+          let alreadyLink = await Links.findAll({
+            where: {
+              guild_id: message.guild.id,
+              channel_id: message.channel.id,
+              url: s
+            }
           });
-          count++;
-          console.log(date + " Saved this link from " + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ": " + s + " | " + title);
-        } catch (e) {
-          if (e.name === 'SequelizeUniqueConstraintError') {
-            console.log(date + ' ' + e + ': Not saving this duplicate link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s + " | " + title);
-  	      } else {
-            console.error(date + ' Got exception ' + e + ' while trying to save this link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s + " | " + title);
+
+          if (alreadyLink.length > 0) {
+
+            console.log(date + ': Not saving this duplicate link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s);
+
+          } else {
+
+            let title = await fetchTitle(s);
+            // Ok to save.
+            const link = Links.create({
+            	url: s,
+              guild: message.guild.name,
+              channel: message.channel.name,
+              guild_id: message.guild.id,
+              channel_id: message.channel.id,
+              description: title
+            });
+            count++;
+            console.log(date + " Saved this link from " + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ": " + s);
+
           }
+        } catch (e) {
+            console.error(date + ' Got exception ' + e + ' while trying to save this link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s);
         }
-           
       }
     }
 

@@ -1,9 +1,11 @@
 
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('Link', {
-    url: { type: DataTypes.TEXT, unique: true, },
-    server: DataTypes.STRING,
+    url: DataTypes.TEXT,
+    guild: DataTypes.STRING,
     channel: DataTypes.STRING,
+    guild_id: DataTypes.STRING,
+    channel_id: DataTypes.STRING, 
     description: DataTypes.STRING
   });
 };
