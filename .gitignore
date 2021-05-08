@@ -1,4 +1,4 @@
 node_modules
 auth.json
 package-lock.json
-*.sqlite
+*.sqlite*
