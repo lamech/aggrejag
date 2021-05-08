@@ -26,21 +26,23 @@ client.on("message", async message => {
       const timeTaken = Date.now() - message.createdTimestamp;
       message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
 
-    } else if (command === "linklist") {
+    } else if (command === "list") {
 
-      let links = await Links.findAll();
-      
-      if (links.length > 0) { 
-        message.channel.send({ embed: linksToEmbed(links) });
-      } else {
-        message.reply('Sorry, no links to share right now; wait for someone to post something.');
-      }
-
-    } else if (command === "ytlist") {
+      // TODO: Going to the db twice here. 
+      // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
+        where: {
+          server: message.guild.name,
+          channel: message.channel.name
+        }
+      });
+
+      let ytlinks = await Links.findAll({
         order: [['createdAt', 'DESC']],
         where: {
+          server: message.guild.name,
+          channel: message.channel.name,
           url: { 
             [Op.or]: {
               [Op.startsWith]: 'https://youtube.com/', 
@@ -50,14 +52,15 @@ client.on("message", async message => {
         }
       });
 
-      // Only grab the most recent 50 links, if there are more than 50,
+      // Only grab the most recent 50 YT links, if there are more than 50,
       // due to Youtube's limit on this way of anonymously creating a playlist:
-      links = links.slice(-50); 
+      ytlinks = ytlinks.slice(-50); 
 
       let ids = [];
+      let ytlist;
 
-      for (const link of links) {
-        let url = new URL(link.url);
+      for (const ytlink of ytlinks) {
+        let url = new URL(ytlink.url);
         let id = url.searchParams.get('v'); 
         if (id != null) {
          ids.push(id); 
@@ -65,15 +68,18 @@ client.on("message", async message => {
       }
 
       if (ids.length > 0) {
-        message.reply('https://www.youtube.com/watch_videos?video_ids=' + ids.join(','));
-      } else {
-        message.reply('Sorry, no Youtube links to share right now; try !linklist instead.');
-      }
+        ytlist = 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
+      } 
       
+      if (links.length > 0) { 
+        message.channel.send({ embed: linksToEmbed(ytlist, links) });
+      } else {
+        message.reply('Sorry, no links to share right now; wait for someone to post something.');
+      }
 
     } else if (command === "help") {
       // TODO: Generate help message dynamically.
-      message.reply(`I grab links every time someone shares them in here. If you tell me '!ytlist' I will return a Youtube playlist of the most recent 50 Youtube links I've seen.`);
+      message.reply(`I grab links every time someone shares them in here. If you tell me '!list' I will return a list of the recent links I've seen.`);
     }
   } else {
 
@@ -139,9 +145,14 @@ function isValidHttpUrl(string) {
   return url.protocol === "http:" || url.protocol === "https:";
 }
 
-function linksToEmbed(links) {
+function linksToEmbed(ytlist, links) {
 
   let fields = [];
+  if (ytlist != null) { 
+    fields = [{ 
+      name: 'Playlist (YouTube links only)', value : ytlist
+    }];
+  }
 
   for (const link of links) {
     fields.push({ name: link.description, value: link.url }) 
