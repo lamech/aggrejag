@@ -1,4 +1,5 @@
 const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
 const sequelize = new Sequelize('database', 'username', 'password', {
 	host: 'localhost',
@@ -9,4 +10,4 @@ const sequelize = new Sequelize('database', 'username', 'password', {
 
 const Links = require('./model/Links')(sequelize, Sequelize.DataTypes);
 
-module.exports = { sequelize, Links };
+module.exports = { sequelize, Op, Links };
