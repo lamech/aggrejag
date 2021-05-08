@@ -32,6 +32,7 @@ client.on("message", async message => {
       // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
+        limit: 50,
         where: {
           server: message.guild.name,
           channel: message.channel.name
@@ -39,6 +40,7 @@ client.on("message", async message => {
       });
 
       let ytlinks = await Links.findAll({
+        limit: 50,
         order: [['createdAt', 'DESC']],
         where: {
           server: message.guild.name,
@@ -51,7 +53,8 @@ client.on("message", async message => {
           }
         }
       });
-
+  
+      // TODO: Despite current 50 row limit, keep this for archive searching, later.
       // Only grab the most recent 50 YT links, if there are more than 50,
       // due to Youtube's limit on this way of anonymously creating a playlist:
       ytlinks = ytlinks.slice(-50); 
@@ -72,6 +75,7 @@ client.on("message", async message => {
       } 
       
       if (links.length > 0) { 
+        //TODO: declutter via DM: message.author.send({ embed: linksToEmbed(ytlist, links) });
         message.channel.send({ embed: linksToEmbed(ytlist, links) });
       } else {
         message.reply('Sorry, no links to share right now; wait for someone to post something.');
@@ -175,13 +179,8 @@ async function fetchTitle(url) {
   let title; 
   await got(url).then(response => {
     const $ = cheerio.load(response.body);
-    console.log("\n##############################################\n");
     const titleData = $('title')[0];
-    console.log(titleData);
-    console.log("\n##############################################\n");
     title = $('title')[0].children[0].data;
-    console.log(title);
-    console.log("\n##############################################\n");
   }).catch(err => {
     console.error(date + 'Error trying to get title of ' + s + ': ' + err);
   });
