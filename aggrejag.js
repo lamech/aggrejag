@@ -87,21 +87,7 @@ client.on("message", async message => {
       // There's a link in the message! Let's try to save it.
 
         let date = new Date().toISOString();
-        let title;
-
-        // Fetch title
-        got(s).then(response => {
-          const $ = cheerio.load(response.body);
-          console.log("\n##############################################\n");
-          const titleData = $('title')[0];
-          console.log(titleData);
-          console.log("\n##############################################\n");
-          title = $('title')[0].children[0].data;
-          console.log(title);
-          console.log("\n##############################################\n");
-        }).catch(err => {
-          console.error(date + 'Error trying to get title of ' + s + ': ' + err);
-        });
+        let title = await fetchTitle(s);
    
         try {
           const link = Links.create({
@@ -110,6 +96,7 @@ client.on("message", async message => {
             channel: message.channel.name,
             description: title
           });
+          count++;
           console.log(date + " Saved this link from " + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ": " + s + " | " + title);
         } catch (e) {
           if (e.name === 'SequelizeUniqueConstraintError') {
@@ -119,15 +106,17 @@ client.on("message", async message => {
           }
         }
            
-        if (count > 0) {
-          let links = ' link.';
-          if (count > 1) {
-            links = ' links.';
-          }
-          message.reply('Saved ' + count + links);
-        }
       }
     }
+
+    if (count > 0) {
+      let links = ' link.';
+      if (count > 1) {
+        links = ' links.';
+      }
+      message.reply('Saved ' + count + links);
+    }
+
   }
 });
 
@@ -167,5 +156,25 @@ function linksToEmbed(links) {
   };
 
   return embed;
+
+}
+
+async function fetchTitle(url) {
+
+  let title; 
+  await got(url).then(response => {
+    const $ = cheerio.load(response.body);
+    console.log("\n##############################################\n");
+    const titleData = $('title')[0];
+    console.log(titleData);
+    console.log("\n##############################################\n");
+    title = $('title')[0].children[0].data;
+    console.log(title);
+    console.log("\n##############################################\n");
+  }).catch(err => {
+    console.error(date + 'Error trying to get title of ' + s + ': ' + err);
+  });
+
+  return title;
 
 }
