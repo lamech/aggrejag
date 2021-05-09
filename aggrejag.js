@@ -4,22 +4,21 @@ const got = require('got');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 let auth = require('./auth.json');
+let config = require ('./config.json');
 
 const { sequelize, Op, Links } = require('./dbObjects');
 
-const prefix = "!";
-const limit = 20;
-
 client.on("message", async message => {
 
-  // TODO: add config mechanism for channels to explicitly watch, ignoring others?
+  // Is this a channel we should be watching? Stay restricted for now.
+  if (!config.channelsToWatch.includes(message.channel.name)) return;
 
   if (message.author.bot) return;
 
   // TODO: Commands section. To generalize.
-  if (message.content.startsWith(prefix)) {
+  if (message.content.startsWith(config.prefix)) {
 
-    const commandBody = message.content.slice(prefix.length);
+    const commandBody = message.content.slice(config.prefix.length);
     const args = commandBody.split(' ');
     const command = args.shift().toLowerCase();
 
@@ -33,7 +32,7 @@ client.on("message", async message => {
       // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
-        limit: limit,
+        limit: config.limit,
         where: {
           guild_id: message.guild.id,
           channel_id: message.channel.id
@@ -84,7 +83,7 @@ client.on("message", async message => {
 
     } else if (command === "help") {
       // TODO: Generate help message dynamically.
-      message.reply(`I grab links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${limit}). If there have been YouTube links shared, the top of the list will be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
+      message.reply(`I grab links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). If there have been YouTube links shared, the top of the list will be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
     }
   } else {
 
@@ -95,7 +94,12 @@ client.on("message", async message => {
     let count = 0;
     for (const s of words) {
       if (isValidHttpUrl(s)) {
+
       // There's a link in the message! Let's try to save it.
+
+
+      // Ignore discord links.
+      if (s.startsWith('https://discord.com')) return;
 
         let date = new Date().toISOString();
    
@@ -141,7 +145,7 @@ client.on("message", async message => {
       if (count > 1) {
         links = ' links.';
       }
-      message.reply('Saved ' + count + links);
+      message.reply('Saved ' + count + links + '. **!help** for more info.');
     }
 
   }
@@ -172,12 +176,9 @@ function linksToEmbed(ytlist, links) {
 
   let fields = [];
   if (ytlist != null) { 
-    fields.push({ 
-      name: 'Playlist (YouTube links only)', value : ytlist
-    });
-    description += ', plus an auto-generated list of just the YouTube links:';
+    description += `. Click [here](${ytlist} 'YouTube playlist') for an auto-generated list of just the YouTube links.`;
   } else {
-    description += ':'
+    description += '.'
   }
 
   for (const link of links) {
