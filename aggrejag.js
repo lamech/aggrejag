@@ -28,20 +28,23 @@ client.on("message", async message => {
 
     } else if (command === "list") {
 
+
       // TODO: Going to the db twice here. 
       // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
         limit: config.limit,
+        order: [['createdAt', 'DESC']],
         where: {
           guild_id: message.guild.id,
           channel_id: message.channel.id
         }
       });
+      links.reverse();
 
       let ytlinks = await Links.findAll({
         limit: 50,
-        order: [['createdAt', 'ASC']],
+        order: [['createdAt', 'DESC']],
         where: {
           guild_id: message.guild.id,
           channel_id: message.channel.id,
@@ -81,9 +84,10 @@ client.on("message", async message => {
         message.reply('Sorry, no links to share right now; wait for someone to post something.');
       }
 
-    } else if (command === "help") {
+    } else if (command === "help" || command === "agg-help") {
       // TODO: Generate help message dynamically.
-      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). If there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
+      let channels = config.channelsToWatch.map(x => '#' + x).join(' ');
+      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). If there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. \nCurrently I'm configured to listen in these channels: **${channels}**. NOTE: I'm still under development, so all this might change.`);
     }
   } else {
 
@@ -145,7 +149,7 @@ client.on("message", async message => {
       if (count > 1) {
         links = ' links';
       }
-      message.reply('Saved ' + count + links + '. **!help** for more info.');
+      message.reply('Saved ' + count + links + '. **!agg-help** for more info.');
     }
 
   }
