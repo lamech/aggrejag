@@ -22,18 +22,24 @@ client.on("message", async message => {
     const args = commandBody.split(' ');
     const command = args.shift().toLowerCase();
 
+    let limit;
+    if (args.includes("--me")) {
+      limit = 50;
+    } else {
+      limit = config.limit;
+    }
+
     if (command === "ping") {
       const timeTaken = Date.now() - message.createdTimestamp;
       message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
 
     } else if (command === "list") {
 
-
       // TODO: Going to the db twice here. 
       // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
-        limit: config.limit,
+        limit: limit,
         order: [['createdAt', 'DESC']],
         where: {
           guild_id: message.guild.id,
@@ -78,8 +84,11 @@ client.on("message", async message => {
       } 
       
       if (links.length > 0) { 
-        //TODO: declutter via DM: message.author.send({ embed: linksToEmbed(ytlist, links) });
-        message.channel.send({ embed: linksToEmbed(ytlist, links) });
+        if (args.includes("--me")) {
+          message.author.send({ embed: linksToEmbed(ytlist, links) });
+        } else {
+          message.channel.send({ embed: linksToEmbed(ytlist, links) });
+        }
       } else {
         message.reply('Sorry, no links to share right now; wait for someone to post something.');
       }
@@ -87,7 +96,7 @@ client.on("message", async message => {
     } else if (command === "help" || command === "agg-help") {
       // TODO: Generate help message dynamically.
       let channels = config.channelsToWatch.map(x => '#' + x).join(' ');
-      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). If there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. \nCurrently I'm configured to listen in these channels: **${channels}**. NOTE: I'm still under development, so all this might change.`);
+      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}).\n\nTo see more links at a time, try **!list --me** and I'll DM you up to 50.\n\nIf there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. \n\nCurrently I'm configured to listen in these channels: **${channels}**.\n\n*NOTE: I'm still under development, so all this might change. Check back with **!agg-help** often.*`);
     }
   } else {
 

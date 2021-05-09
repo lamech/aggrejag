@@ -1,5 +1,5 @@
 {
   "channelsToWatch": ["music-chit-chat", "wip-feedback", "i-made-that", "music"],
   "prefix": "!",
-  "limit": 20
+  "limit": 10
 }
