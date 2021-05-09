@@ -8,6 +8,7 @@ let auth = require('./auth.json');
 const { sequelize, Op, Links } = require('./dbObjects');
 
 const prefix = "!";
+const limit = 20;
 
 client.on("message", async message => {
 
@@ -32,7 +33,7 @@ client.on("message", async message => {
       // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
-        limit: 20,
+        limit: limit,
         where: {
           guild_id: message.guild.id,
           channel_id: message.channel.id
@@ -41,7 +42,7 @@ client.on("message", async message => {
 
       let ytlinks = await Links.findAll({
         limit: 50,
-        order: [['createdAt', 'DESC']],
+        order: [['createdAt', 'ASC']],
         where: {
           guild_id: message.guild.id,
           channel_id: message.channel.id,
@@ -83,7 +84,7 @@ client.on("message", async message => {
 
     } else if (command === "help") {
       // TODO: Generate help message dynamically.
-      message.reply(`I grab links every time someone shares them in here. If you tell me '!list' I will return a list of the most recent links I've seen (20 or fewer). If there have been YouTube links shared, the top of the list will be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
+      message.reply(`I grab links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (current limit: ${limit} links). If there have been YouTube links shared, the top of the list will be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
     }
   } else {
 
@@ -167,11 +168,16 @@ function isValidHttpUrl(string) {
 
 function linksToEmbed(ytlist, links) {
 
+  let description = `Here are the ${links.length} most recent links that were seen in #` + links[0].channel;
+
   let fields = [];
   if (ytlist != null) { 
     fields.push({ 
       name: 'Playlist (YouTube links only)', value : ytlist
     });
+    description += ', plus an auto-generated list of just the YouTube links:';
+  } else {
+    description += ':'
   }
 
   for (const link of links) {
@@ -181,7 +187,7 @@ function linksToEmbed(ytlist, links) {
   const embed = {
   	color: 0x0099ff,
   	title: 'Current Links',
-  	description: 'Links I currently have stored from #' + links[0].channel,
+  	description: description, 
   	fields: fields,
   	timestamp: new Date(),
   };
