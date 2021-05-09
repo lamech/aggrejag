@@ -83,7 +83,7 @@ client.on("message", async message => {
 
     } else if (command === "help") {
       // TODO: Generate help message dynamically.
-      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). If there have been YouTube links shared, the top of the list will be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
+      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). If there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. NOTE: I'm still under development, so all this might change.`);
     }
   } else {
 
