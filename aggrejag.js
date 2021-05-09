@@ -141,9 +141,9 @@ client.on("message", async message => {
     }
 
     if (count > 0) {
-      let links = ' link.';
+      let links = ' link';
       if (count > 1) {
-        links = ' links.';
+        links = ' links';
       }
       message.reply('Saved ' + count + links + '. **!help** for more info.');
     }
