@@ -32,7 +32,7 @@ client.on("message", async message => {
       // Can we sort out YT links in memory instead?
 
       let links = await Links.findAll({
-        limit: 50,
+        limit: 20,
         where: {
           guild_id: message.guild.id,
           channel_id: message.channel.id
@@ -169,9 +169,9 @@ function linksToEmbed(ytlist, links) {
 
   let fields = [];
   if (ytlist != null) { 
-    fields = [{ 
+    fields.push({ 
       name: 'Playlist (YouTube links only)', value : ytlist
-    }];
+    });
   }
 
   for (const link of links) {
@@ -181,7 +181,7 @@ function linksToEmbed(ytlist, links) {
   const embed = {
   	color: 0x0099ff,
   	title: 'Current Links',
-  	description: 'Links I currently have stored from this channel.',
+  	description: 'Links I currently have stored from #' + links[0].channel,
   	fields: fields,
   	timestamp: new Date(),
   };
