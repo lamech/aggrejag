@@ -12,7 +12,6 @@
     "cheerio": "^1.0.0-rc.9",
     "discord": "^0.8.2",
     "discord.js": "^12.5.3",
-    "get-title-at-url": "^1.1.8",
     "got": "^11.8.2",
     "jsonfile": "^6.1.0",
     "sequelize": "^6.6.2",
