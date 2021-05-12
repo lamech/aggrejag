@@ -34,12 +34,18 @@ client.on("message", async message => {
       const timeTaken = Date.now() - message.createdTimestamp;
       message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
 
-    } else if (command === "pls") {
-      if (isDM) { 
-        message.author.send(pleaseChannel);
-      }
-      
-      message.channel.send("Testing message.", { files: ["./pls.pls"] });
+//    } else if (command === "agg-full-list") {
+//      if (isDM) { 
+//        message.author.send(pleaseChannel);
+//        return;
+//      }
+//      
+//      let nonalpha = /\W/g;
+//      let guildname = message.guild.name.replace(nonalpha, '_');
+//      let channelname = message.channel.name.replace(nonalpha, '_');
+//      let filename = `${guildname}_${channelname}.pls`;
+//      await generatePlsFile(message.guild.id, message.channel.id, filename);
+//      message.author.send(`Here's a text file containing all the links I've collected in ${message.channel.name}.`, { files: [filename] });
       
     } else if (command === "list") {
       if (isDM) { 
@@ -254,4 +260,28 @@ async function logWithDate(str) {
 
 async function errorWithDate(str) {
   console.error(new Date().toISOString() + ' ' + str);
+}
+
+async function generatePlsFile(guild_id, channel_id, filename) {
+  let links = await Links.findAll({
+    order: [['createdAt', 'ASC']],
+    where: {
+      guild_id: guild_id,
+      channel_id: channel_id
+    }
+  });
+
+  fs.writeFile(filename, await generatePlsData(links), function (err) {
+    if (err) throw err;
+  });
+}
+
+async function generatePlsData(links) {
+  return `[playlist]${links.map((link, i) => `
+File${i+1}=${link.url}
+Title${i+1}=${link.description}
+Length${i+1}=-1`)}
+NumberOfEntries=${links.length}
+Version=2
+`;
 }
