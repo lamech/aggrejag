@@ -34,22 +34,22 @@ client.on("message", async message => {
       const timeTaken = Date.now() - message.createdTimestamp;
       message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
 
-//    } else if (command === "agg-full-list") {
-//      if (isDM) { 
-//        message.author.send(pleaseChannel);
-//        return;
-//      }
-//      
-//      let nonalpha = /\W/g;
-//      let guildname = message.guild.name.replace(nonalpha, '_');
-//      let channelname = message.channel.name.replace(nonalpha, '_');
-//      let filename = `${guildname}_${channelname}.pls`;
-//      await generatePlsFile(message.guild.id, message.channel.id, filename);
-//      message.author.send(`Here's a text file containing all the links I've collected in ${message.channel.name}.`, { files: [filename] });
       
     } else if (command === "list") {
+
       if (isDM) { 
         message.author.send(pleaseChannel);
+        return;
+      }
+
+      if (args.includes("json")) {
+        let nonalpha = /\W/g;
+        let guildname = message.guild.name.replace(nonalpha, '_');
+        let channelname = message.channel.name.replace(nonalpha, '_');
+        let filename = `${guildname}_${channelname}.json`;
+        await generateJsonFile(message.guild.id, message.channel.id, filename);
+        message.author.send(`Here's a json file containing all the links I've collected in #${message.channel.name}.`, { files: [filename] });
+        return;
       }
 
       // TODO: Going to the db twice here. 
@@ -108,9 +108,9 @@ client.on("message", async message => {
 
     } else if (command === "help" || command === "agg-help") {
       // TODO: Generate help message dynamically.
-      message.author.send(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}).\n\nDiscord's character limits on messages might shorten it, though. Don't worry, grrdjf's working on it.\n\nIf there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. Say **!agg-help-ytlist** for info on how to use this playlist. \n\nCurrently I'm configured to listen in these channels: **${namesOfChannelsToWatch}**.\n\n*NOTE: I'm still under development, so all this might change. Check back with **!agg-help** often. See also **!agg-notes** for the latest changes.*`);
+      message.author.send(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}). Discord's character limits on messages might shorten it, though. Say **!agg-help-ytlist** for info on how to use this playlist.\n\nIf instead you want a JSON file with *everything* I've seen in a given channel, say **!list json** instead.\n\nCurrently I'm configured to listen in these channels: **${namesOfChannelsToWatch}**.\n\n*NOTE: I'm still under development, so all this might change. Check back with **!agg-help** often. See also **!agg-notes** for the latest changes.*`);
     } else if (command === "agg-notes") {
-      message.author.send(`\n\n**May 11, 2021**\n\nMoved most bot responses to DM to reduce channel traffic. Also the bot now responds to DMs.\n\n**May 10, 2021**\n\n* Aggrejag should now notice when you upload a file (like some folks do in #wip-feedback) and store the CDN link to that file in its !list.\n* Unfortunately, detecting links that are posted from other apps like SoundCloud (especially when you post from your phone) is weird & unreliable. I may not be able to get this working easily/soon. Sorry!\n* People are very excited about the bot. This is a good problem to have! However, it means we are hitting Discord's character limits on the increasingly long lists it's trying to return to people. "We're going to need a bigger bucket." I have ideas. Might take some time to implement 'em, though.\n* Remember to check !agg-help for changes; no more weird hyphens, it's now just **!list me**.\n\n Meanwhile, thx for your enthusiasm and patience! :pray:\n\n--grrdjf`);
+      message.author.send(`**May 12, 2021**\n\nAdded full JSON list option.\n\n**May 11, 2021**\n\nMoved most bot responses to DM to reduce channel traffic. Also the bot now responds to DMs.\n\n**May 10, 2021**\n\n* Aggrejag should now notice when you upload a file (like some folks do in #wip-feedback) and store the CDN link to that file in its !list.\n* Unfortunately, detecting links that are posted from other apps like SoundCloud (especially when you post from your phone) is weird & unreliable. I may not be able to get this working easily/soon. Sorry!\n* People are very excited about the bot. This is a good problem to have! However, it means we are hitting Discord's character limits on the increasingly long lists it's trying to return to people. "We're going to need a bigger bucket." I have ideas. Might take some time to implement 'em, though.\n* Remember to check !agg-help for changes; no more weird hyphens, it's now just **!list me**.\n\n Meanwhile, thx for your enthusiasm and patience! :pray:\n\n--grrdjf`);
     } else if (command === "agg-help-ytlist") {
       message.author.send(`You can use the YouTube playlist generated by **!list** in at least two ways:\n\n1) Click the link. Watch/listen on YouTube. Enjoyment ensues.\n\n2) When you clicked the link, did you notice that YouTube immediately redirects you to a new URL? Copy it and paste it somewhere for later use; for example, go say **!p [that URL]** in the #dj-booth and Chordbot will add the list of tracks to its queue.`);
     }
@@ -262,6 +262,23 @@ async function errorWithDate(str) {
   console.error(new Date().toISOString() + ' ' + str);
 }
 
+async function generateJsonFile(guild_id, channel_id, filename) {
+  let links = await Links.findAll({
+    attributes: ['description', 'url'],
+    order: [['createdAt', 'ASC']],
+    where: {
+      guild_id: guild_id,
+      channel_id: channel_id
+    }
+  });
+
+  fs.writeFile(filename, JSON.stringify(links, null, 2), function (err) {
+    if (err) throw err;
+  });
+}
+
+
+//TODO: not using pls data rn; I wrote this stuff and it works though, maybe later? split out to a module!
 async function generatePlsFile(guild_id, channel_id, filename) {
   let links = await Links.findAll({
     order: [['createdAt', 'ASC']],
@@ -276,6 +293,7 @@ async function generatePlsFile(guild_id, channel_id, filename) {
   });
 }
 
+//TODO: not using pls data rn; I wrote this stuff and it works though, maybe later? split out to a module!
 async function generatePlsData(links) {
   return `[playlist]${links.map((link, i) => `
 File${i+1}=${link.url}
