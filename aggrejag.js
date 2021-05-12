@@ -9,9 +9,16 @@ let config = require ('./config.json');
 const { sequelize, Op, Links } = require('./dbObjects');
 
 client.on("message", async message => {
-  // Is this a channel we should be watching? Stay restricted for now.
-  if (!config.channelsToWatch.includes(message.channel.name)) return;
 
+  let isDM = (message.channel.type === "dm");
+
+  // Is this a channel we should be watching? Stay restricted for now.
+  if (!isDM && !config.channelsToWatch.includes(message.channel.name)) return;
+
+  let namesOfChannelsToWatch = config.channelsToWatch.map(x => '#' + x).join(' ');
+  let pleaseChannel = `Please use this command in one of these channels, so I know which one you mean: ${namesOfChannelsToWatch}`;
+
+  // Ignore bots
   if (message.author.bot) return;
 
   // TODO: Commands section. To generalize.
@@ -21,18 +28,23 @@ client.on("message", async message => {
     const args = commandBody.split(' ');
     const command = args.shift().toLowerCase();
 
-    let limit;
-    if (args.includes("me")) {
-      limit = 50;
-    } else {
-      limit = config.limit;
-    }
+    let limit = config.limit;
 
     if (command === "ping") {
       const timeTaken = Date.now() - message.createdTimestamp;
       message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
 
+    } else if (command === "pls") {
+      if (isDM) { 
+        message.author.send(pleaseChannel);
+      }
+      
+      message.channel.send("Testing message.", { files: ["./pls.pls"] });
+      
     } else if (command === "list") {
+      if (isDM) { 
+        message.author.send(pleaseChannel);
+      }
 
       // TODO: Going to the db twice here. 
       // Can we sort out YT links in memory instead?
@@ -83,23 +95,18 @@ client.on("message", async message => {
       } 
       
       if (links.length > 0) { 
-        if (args.includes("me")) {
-          message.author.send({ embed: linksToEmbed(ytlist, links) });
-        } else {
-          message.channel.send({ embed: linksToEmbed(ytlist, links) });
-        }
+        message.author.send({ embed: linksToEmbed(ytlist, links) });
       } else {
-        message.reply('Sorry, no links to share right now; wait for someone to post something.');
+        message.reply('Sorry, no links to share right now; wait for someone to post something in this channel.');
       }
 
     } else if (command === "help" || command === "agg-help") {
       // TODO: Generate help message dynamically.
-      let channels = config.channelsToWatch.map(x => '#' + x).join(' ');
-      message.reply(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}).\n\nTo see more links at a time, try **!list me** and I'll DM you up to 50. Discord's character limits on messages might shorten this, though. Don't worry, grrdjf's working on it.\n\nIf there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. Say **!agg-help-ytlist** for info on how to use this playlist. \n\nCurrently I'm configured to listen in these channels: **${channels}**.\n\n*NOTE: I'm still under development, so all this might change. Check back with **!agg-help** often. See also **!agg-notes** for the latest message from grrdjf.*`);
+      message.author.send(`I store links every time someone shares them in here. If you tell me **!list** I will return a list of the most recent links I've seen (up to ${config.limit}).\n\nDiscord's character limits on messages might shorten it, though. Don't worry, grrdjf's working on it.\n\nIf there have been YouTube links shared, there will also be a link to an auto-generated YouTube playlist you can click on. Say **!agg-help-ytlist** for info on how to use this playlist. \n\nCurrently I'm configured to listen in these channels: **${namesOfChannelsToWatch}**.\n\n*NOTE: I'm still under development, so all this might change. Check back with **!agg-help** often. See also **!agg-notes** for the latest changes.*`);
     } else if (command === "agg-notes") {
-      message.reply(`\n**May 10, 2021**\n\n* Aggrejag should now notice when you upload a file (like some folks do in #wip-feedback) and store the CDN link to that file in its !list.\n* Unfortunately, detecting links that are posted from other apps like SoundCloud (especially when you post from your phone) is weird & unreliable. I may not be able to get this working easily/soon. Sorry!\n* People are very excited about the bot. This is a good problem to have! However, it means we are hitting Discord's character limits on the increasingly long lists it's trying to return to people. "We're going to need a bigger bucket." I have ideas. Might take some time to implement 'em, though.\n* Remember to check !agg-help for changes; no more weird hyphens, it's now just **!list me**.\n\n Meanwhile, thx for your enthusiasm and patience! :pray:\n\n--grrdjf`);
+      message.author.send(`\n\n**May 11, 2021**\n\nMoved most bot responses to DM to reduce channel traffic. Also the bot now responds to DMs.\n\n**May 10, 2021**\n\n* Aggrejag should now notice when you upload a file (like some folks do in #wip-feedback) and store the CDN link to that file in its !list.\n* Unfortunately, detecting links that are posted from other apps like SoundCloud (especially when you post from your phone) is weird & unreliable. I may not be able to get this working easily/soon. Sorry!\n* People are very excited about the bot. This is a good problem to have! However, it means we are hitting Discord's character limits on the increasingly long lists it's trying to return to people. "We're going to need a bigger bucket." I have ideas. Might take some time to implement 'em, though.\n* Remember to check !agg-help for changes; no more weird hyphens, it's now just **!list me**.\n\n Meanwhile, thx for your enthusiasm and patience! :pray:\n\n--grrdjf`);
     } else if (command === "agg-help-ytlist") {
-      message.reply(`You can use the YouTube playlist generated by **!list** in at least two ways:\n\n1) Click the link. Watch/listen on YouTube. Enjoyment ensues.\n\n2) When you clicked the link, did you notice that YouTube immediately redirects you to a new URL? Copy it and paste it somewhere for later use; for example, go say **!p [that URL]** in the #dj-booth and Chordbot will add the list of tracks to its queue.`);
+      message.author.send(`You can use the YouTube playlist generated by **!list** in at least two ways:\n\n1) Click the link. Watch/listen on YouTube. Enjoyment ensues.\n\n2) When you clicked the link, did you notice that YouTube immediately redirects you to a new URL? Copy it and paste it somewhere for later use; for example, go say **!p [that URL]** in the #dj-booth and Chordbot will add the list of tracks to its queue.`);
     }
   } else {
 
@@ -110,13 +117,11 @@ client.on("message", async message => {
     // Add any embed links to the list of "words" so they're processed similarly.
     if (message.embeds.length > 0) {
       words = words.concat(message.embeds.map(x => x.url));
-      console.log(words);
     }
 
     // Grab CDN links to any uploaded files
     if (message.attachments.size > 0) {
       words = words.concat(message.attachments.map(x => x.url));
-      console.log(words);
     }
 
     let count = 0;
@@ -141,7 +146,7 @@ client.on("message", async message => {
 
           if (alreadyLink.length > 0) {
 
-            logWithDate(': Not saving this duplicate link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s);
+            logWithDate(': Not saving this duplicate link from ' + message.guild.name + ' ' + message.channel.name + ': ' + s);
 
           } else {
 
@@ -161,11 +166,11 @@ client.on("message", async message => {
               description: title
             });
             count++;
-            logWithDate(" Saved this link from " + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ": " + s);
+            logWithDate(" Saved this link from " + message.guild.name + ' ' + message.channel.name + ": " + s);
 
           }
         } catch (e) {
-            errorWithDate(' Got exception ' + e + ' while trying to save this link from ' + message.guild.name + ' ' + message.channel.name + ' ' + message.author.tag + ': ' + s);
+            errorWithDate(' Got exception ' + e + ' while trying to save this link from ' + message.guild.name + ' ' + message.channel.name + ': ' + s);
         }
       }
     }
@@ -175,7 +180,7 @@ client.on("message", async message => {
       if (count > 1) {
         links = ' links';
       }
-      message.reply('Saved ' + count + links + '. **!agg-help** for more info.');
+      message.author.send('Saved ' + count + links + '. **!agg-help** for more info.');
     }
 
   }
