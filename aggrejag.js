@@ -32,8 +32,7 @@ client.on("message", async message => {
 
     if (command === "ping") {
       const timeTaken = Date.now() - message.createdTimestamp;
-      message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
-
+      message.reply(`Pong! This message had a latency of ${timeTaken}ms.`).then(msg => { msg.delete({ timeout: 10000 }) }).catch(console.error);
       
     } else if (command === "list") {
 
@@ -132,12 +131,8 @@ client.on("message", async message => {
 
     let count = 0;
     for (const s of words) {
-      if (isValidHttpUrl(s)) {
-
-        // There's a link in the message! Let's try to save it.
-
-        // Ignore discord links.
-        if (s.startsWith('https://discord.com')) return;
+      // Ensure valid URL and ignore discord links.
+      if (isValidHttpUrl(s) && !s.startsWith('https://discord.com')) {
 
         try {
  
